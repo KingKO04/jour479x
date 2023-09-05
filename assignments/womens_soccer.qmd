@@ -34,7 +34,7 @@ matches_2023 %>%
   summarize(
     total_shots = sum(sh_att),
     shots_on_goal = sum(so_g),
-    shot_acc = shots_on_goal / total_shots
+    shot_acc = 100 * shots_on_goal / total_shots
     )
 ```
 
@@ -56,12 +56,13 @@ matches_2022 %>%
 3. What about draws - Maryland started 2022 with 4 ties. Have any other teams had as many this season?
 
 ```{r}
-matches_2022 %>%
+matches_2023 %>%
   filter(outcome=="Draw") %>%
   group_by(team) %>%
-  summarise(
+  summarize(
     draws = n()
-  )
+  ) %>%
+  arrange(desc(draws))
 ```
 Plenty of teams had at least 4 ties this season
 
@@ -70,10 +71,11 @@ Plenty of teams had at least 4 ties this season
 ```{r}
 matches_2023 %>%
   group_by(team) %>%
-  summarise(
+  summarize(
     corners = sum(corners),
     opp_corners = sum(defensive_corners),
     corner_advantage = corners - opp_corners
-  )
+  ) %>%
+  arrange(desc(corner_advantage))
 ```
 I wasn't sure what you exactly meant by "every" team, so I showed the difference for every team. The difference for Maryland specifically, though, is -2 (23 for Maryland, 23 for Maryland's opponents).
