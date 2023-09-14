@@ -79,3 +79,27 @@ matches_2023 %>%
   arrange(desc(corner_advantage))
 ```
 I wasn't sure what you exactly meant by "every" team, so I showed the difference for every team. The difference for Maryland specifically, though, is -2 (23 for Maryland, 23 for Maryland's opponents).
+
+## Significance Tests
+
+Hypothesis: There is more scoring in women's soccer this season compared to last season.
+
+Add a column to both dataframes that contains the total_goals for each match. To do this, we'll use mutate and we will save the results back to the same dataframe.
+
+```{r}
+matches_2022 <- matches_2022 |> mutate(total_goals = goals + defensive_goals)
+matches_2023 <- matches_2023 |> mutate(total_goals = goals + defensive_goals)
+```
+
+```{r}
+t.test(matches_2022$total_goals, matches_2023$total_goals)
+```
+
+The results of this test are strong and usable. However, the difference in goals between the two seasons are small. In 2022, there were 2.7 goals per game. This season, there have been 3 goals per game. Although I do not know the typical variation from year-to-year for goals per game, 0.3 does not seem like a large difference. Also, 2023 is almost exclusively filled with out-of-conference games. These games tend to be more lopsided, and therefore higher scoring. 2022 has more competitive games since it has the full conference season.
+
+```{r}
+matches_2022_early <- matches_2022 |> filter(date < "2022-09-14")
+t.test(matches_2022_early$total_goals, matches_2023$total_goals)
+```
+
+The p-value is still low enough to use the results of the t-test. The results show that there is even less of a difference in scoring between the two seasons, with 2022's early season scoring per game output at 2.9 goals. This is a small, negligible difference.
