@@ -1,1 +1,62 @@
+```{r}
+library(tidyverse)
+```
 
+
+```{r}
+w_volleyball_data <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensVolleyballData/main/data/ncaa_womens_volleyball_matchstats_2022.csv")
+```
+
+
+```{r}
+conservative_volleyball <- w_volleyball_data |>
+  group_by(team) |>
+  summarize(
+    attack_errors_rate = sum(errors)/sum(total_attacks),
+    return_error_rate = sum(r_err)/sum(ret_att),
+    block_error_rate = sum(b_err)/sum((block_solos + 0.5*block_assists + b_err))
+  )
+```
+
+
+
+```{r}
+conservascore <- conservative_volleyball |>
+  mutate(
+    z_attack_errors_rate = as.numeric(scale(attack_errors_rate, center = TRUE, scale = TRUE)) * -1,
+    z_return_error_rate = as.numeric(scale(return_error_rate, center = TRUE, scale = TRUE)) * -1,
+    z_block_error_rate = as.numeric(scale(block_error_rate, center = TRUE, scale = TRUE)) * -1,
+    total_z_score = z_attack_errors_rate + z_return_error_rate + z_block_error_rate
+  )
+```
+
+
+```{r}
+conservascore |>
+  select(team, total_z_score) |>
+  arrange(desc(total_z_score))
+```
+
+
+As you can see, the highest performing teams by Conservascore are San Diego (record: 6-6), James Madison (10-4), Stephen F. Austin (14-3), Texas (8-3), and Brown (9-2). None of these teams have lost more games than they have won, and most of them win a large majority of the time.
+
+
+```{r}
+conservascore |>
+  select(team, total_z_score) |>
+  filter(team == "Maryland Terrapins, Terps")
+```
+
+
+Maryland ranks quite high by Conservascore, suggesting that we are either a risk-averse team or are simply very talented. Knowing how often we attempt high-risk but high-value actions would help discern that.
+
+
+```{r}
+conservascore |>
+  select(team, total_z_score) |>
+  filter(total_z_score < (total_z_score[team == "Maryland Terrapins, Terps"] + .1), total_z_score > (total_z_score[team == "Maryland Terrapins, Terps"] - .1)) |>
+  arrange(desc(total_z_score))
+```
+
+
+I had to search how to used Maryland's z score as a basis for finding similar teams. After doing so, I used +/- 0.1 as the "offset" to find a small list of teams similar to Maryland. Teams like Arizona (5-8), Kansas State (8-4), Pittsburgh (11-2), UCLA (8-4), and Colorado (9-4) are near Maryland. These teams are generally good (or at least better than their opposition). However, Maryland this season is 12-3, noticeably better than the teams in this range. This data can be used to show that Maryland's risk-averse approach to volleyball has benefited them so far but could rear its (relatively) ugly head soon. Maybe they should play more aggressively and look for kills where they usually don't, or maybe they don't attempt enough blocks.
