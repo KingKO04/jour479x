@@ -1,0 +1,7 @@
+I have chosen to attack the first question I posed: "Would ball progression stats like progressive passes and progressive carries be good indicators of how well a team does at creating chances?". Some notes on the data backgrounding:
+
+- the data already exist and can be scraped from fbref.com, though only certain leagues have all the data required
+- I can figure out how to scrape the data
+- Hopefully, one full season of data would provide a low enough p-value, meaning I would use the 2022-23 season. If it doesn't, however, I will continue adding seasons until I have a strong p-value.
+- I will not have to improve/augment the data
+- Infogol (https://www.infogol.net/en/blog/analysis/shot-based-expected-goals-models-vs-ball-progression-models) has an expected goals model based on ball progression but it is based on "the historical likelihood that every possession that reached any specific point on the field eventually ended in a goal being scored". What I am attempting to do is to see how progessive actions correlate to chance creation.
