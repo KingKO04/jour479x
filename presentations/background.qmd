@@ -4,4 +4,27 @@ I have chosen to attack the first question I posed: "Would ball progression stat
 - I can figure out how to scrape the data
 - Hopefully, one full season of data would provide a low enough p-value, meaning I would use the 2022-23 season. If it doesn't, however, I will continue adding seasons until I have a strong p-value.
 - I will not have to improve/augment the data
-- Infogol (https://www.infogol.net/en/blog/analysis/shot-based-expected-goals-models-vs-ball-progression-models) has an expected goals model based on ball progression but it is based on "the historical likelihood that every possession that reached any specific point on the field eventually ended in a goal being scored". What I am attempting to do is to see how progessive actions correlate to chance creation.
+- Infogol (https://www.infogol.net/en/blog/analysis/shot-based-expected-goals-models-vs-ball-progression-models) has an expected goals model based on ball progression but it is based on "the historical likelihood that every possession that reached any specific point on the field eventually ended in a goal being scored". What I am attempting to do is to see how progressive actions correlate to chance creation.
+
+
+
+
+
+```{r}
+library(tidyverse)
+library(RSelenium)
+library(dplyr)
+```
+
+```{r}
+source('FBref-scraper.R')
+source('Aggregate-FBref-Teamstats.R')
+```
+
+
+
+```{r}
+five_leagues <- data
+```
+
+
