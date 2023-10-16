@@ -71,3 +71,15 @@ Teams that are fundamentally sound typically do well. This is typically reflecte
 Firstly, we can look at some of the teams they lost to. They've lost to UNLV, Kansas, Colorado State, Stanford, UCLA, and USC. We've already noted how good Kansas is, but it should also go without saying that Stanford is quite good as well. Those are two games most would expect Colorado to lose. Thankfully, neither team is still on their schedule. However, they do have to face UCLA and USC again. These are two games, though, that I think they can win next time around. I believe they are as good as these teams if not better. In the loss to UCLA, they suffered from a terrible day hitting-wise, with a hit percentage below 8%. Against USC they were unusually reckless in their returns, committing 11 return errors. These are numbers that are attributable to off days and I don't see them repeating themselves. The games against UNLV and Colorado State were a similar story, and though they already won their reverse matchup against Colorado State they will not have the same opportunity against UNLV.
 
 With 16 games left in the season, the question remains: how will Colorado end the season? With Arizona State, Oregon, and Washington State still on the schedule twice each, I could see them finishing the game 10-6. These are the only teams remaining clearly better than them. The next best teams are UCLA and USC; the rest should be wins for Colorado. They are simply more fundamentally sound than these teams and those teams don't do enough elsewhere to make up for it. Is it a resurgence? A slight one, but given their record against the easier part of their schedule, getting the same results against the tougher half, especially comparing it to their current conference record of 1-3, should be seen as an improvement.
+
+
+
+
+
+
+
+```{r}
+rosters <- read_csv("https://raw.githubusercontent.com/Sports-Roster-Data/womens-volleyball/main/vb_rosters_2023_24.csv")
+```
+
+
