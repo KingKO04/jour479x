@@ -13,3 +13,102 @@ First plays are inconsistently defined among teams.
 ```{r}
 plays_2023 |> filter(drive_number == 1, play_number == 1, play_type != 'Kickoff') |> distinct(home, play_type)
 ```
+
+
+```{r}
+library(waffle)
+```
+
+
+```{r}
+md <- c("Rushing"=175, "Passing"=314)
+ms <- c("Rushing"=100, "Passing"=221)
+```
+
+
+
+
+```{r}
+waffle(
+        md, 
+        rows = 10, 
+        title="Maryland's offense", 
+        xlab="1 square = 1 yard", 
+        colors = c("black", "red")
+)
+```
+
+
+```{r}
+passing <- c("Maryland"=314, "Michigan State"=221)
+```
+
+
+```{r}
+waffle(
+        passing, 
+        rows = 10, 
+        title="Maryland vs Michigan State: passing", 
+        xlab="1 square = 1 yard", 
+        colors = c("red", "green")
+)
+```
+
+```{r}
+iron(
+ waffle(md, 
+        rows = 10, 
+        title="Maryland's offense", 
+        xlab="1 square = 1 yard", 
+        colors = c("black", "red")
+        ),
+ waffle(ms, 
+        rows = 10, 
+        title="Michigan State's offense", 
+        xlab="1 square = 1 yard", 
+        colors = c("black", "green")
+        )
+)
+```
+
+```{r}
+md <- c("Rushing"=175, "Passing"=314)
+ms <- c("Rushing"=100, "Passing"=221, 168)
+```
+
+```{r}
+iron(
+ waffle(md, 
+        rows = 10, 
+        title="Maryland's offense", 
+        xlab="1 square = 1 yard", 
+        colors = c("black", "red")
+        ),
+ waffle(ms, 
+        rows = 10, 
+        title="Michigan State's offense", 
+        xlab="1 square = 1 yard",
+        colors = c("black", "green", "white")
+        )
+)
+```
+
+```{r}
+iron(
+ waffle(md/2, 
+        rows = 10, 
+        title="Maryland's offense", 
+        xlab="1 square = 2 yard", 
+        colors = c("black", "red")
+        ),
+ waffle(ms/2, 
+        rows = 10, 
+        title="Michigan State's offense", 
+        xlab="1 square = 2 yard",
+        colors = c("black", "green", "white")
+        )
+)
+```
+
+
+
