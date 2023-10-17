@@ -12,19 +12,75 @@ I have chosen to attack the first question I posed: "Would ball progression stat
 
 ```{r}
 library(tidyverse)
-library(RSelenium)
-library(dplyr)
+install.packages("worldfootballR")
+library(worldfootballR)
 ```
 
 ```{r}
-source('FBref-scraper.R')
-source('Aggregate-FBref-Teamstats.R')
+epl <- fb_match_urls(country = "ENG", gender = "M", season_end_year = c(2018:2024), tier = "1st")
 ```
 
 
 
 ```{r}
-five_leagues <- data
+big5_shooting <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "shooting", team_or_player = "team")
+big5_passing <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "passing", team_or_player = "team")
+big5_possession <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "possession", team_or_player = "team")
 ```
 
+```{r}
+filtered_big5_shooting <- big5_shooting |>
+  filter(Team_or_Opponent == "team") |>
+  group_by(Season_End_Year, Squad) |>
+  summarize(non_PK_Gls = Gls_Standard - PK_Standard, Games = Mins_Per_90)
+
+big5_passing |>
+  filter(Team_or_Opponent == "team") |>
+  select(Team_or_Opponent, Squad, PrgP)
+
+big5_possession |>
+  filter(Team_or_Opponent == "team") |>
+  select(Season_End_Year, Squad, PrgC_Carries)
+```
+
+
+
+```{r}
+average_big5_shooting <- filtered_big5_shooting |>
+  group_by(Season_End_Year) |>
+  summarize(mean_non_PK_Gls = sum(non_PK_Gls) / sum(Games))
+
+ggplot() + geom_line(data = filtered_big5_shooting, aes(x = Season_End_Year, y = non_PK_Gls / Games, group = Squad), color = "grey") +
+  geom_line(data = average_big5_shooting, aes(x = Season_End_Year, y = mean_non_PK_Gls), color = "red")
+```
+
+
+
+```{r}
+big5 <- data.frame(big5_shooting$Season_End_Year, big5_shooting$Squad, big5_shooting$npxG_Expected, big5_passing$PrgP, big5_possession$PrgC_Carries) |>
+  mutate(Progressions = big5_passing.PrgP + big5_possession.PrgC_Carries)
+```
+
+
+
+```{r}
+big5_wide <- big5 |>
+  pivot_longer(
+  cols = starts_with("big5_p"),
+  names_to = "Type",
+  values_to = "Total_Progressions"
+)
+
+ggplot() + geom_bar(
+  data = big5_wide,
+  aes(x = big5_shooting.Squad, weight = Total_Progressions, fill = Type)
+) + coord_flip()
+```
+
+
+The stacked bar chart as of right now is ugly. I am still unsure as to how I want to present this mass of data. I can't decide whether it is continuous (there are years, but they aren't that important because I am not interested in trends over time but rather just need a larger sample size) or categorical (I am finding the relationship between two columns of data). I think it's categorical, but even in that case I am not too sure what I would want to present in a graph. In regards to displaying how much impact progressions have on goal-scoring, I can't think of a way that a bar chart would be helpful.
+
+Another issue is simply the volume of teams. There are 5 leagues. Up until this season, 4 of the 5 leagues had 20 teams, with the Bundesliga being the only one with 18. This year, Ligue 1 went down to 18 teams as well. Across 7 different seasons, this adds up to 684 teams to display data for. I don't think showing an average would suffice, as I want to show a relationship between progressions and goals. Averages would not show a relationship as both progressions and goals have stayed relatively constant over the past seven years.
+
+Small issue I can solve by myself but haven't attempted it yet is finding out how to combine two columns. I assume there is a function for that and I'll need it to combine the Year and Squad columns.
 
