@@ -23,23 +23,26 @@ epl <- fb_match_urls(country = "ENG", gender = "M", season_end_year = c(2018:202
 
 
 ```{r}
-big5_shooting <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "shooting", team_or_player = "team")
-big5_passing <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "passing", team_or_player = "team")
-big5_possession <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "possession", team_or_player = "team")
+big5_shooting <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "shooting", team_or_player = "team") |>
+  filter(Team_or_Opponent == "team") |>
+  subset(select = -Team_or_Opponent)
+big5_passing <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "passing", team_or_player = "team") |>
+  filter(Team_or_Opponent == "team") |>
+  subset(select = -Team_or_Opponent)
+big5_possession <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "possession", team_or_player = "team") |>
+  filter(Team_or_Opponent == "team") |>
+  subset(select = -Team_or_Opponent)
 ```
 
 ```{r}
 filtered_big5_shooting <- big5_shooting |>
-  filter(Team_or_Opponent == "team") |>
   group_by(Season_End_Year, Squad) |>
   summarize(non_PK_Gls = Gls_Standard - PK_Standard, Games = Mins_Per_90)
 
 big5_passing |>
-  filter(Team_or_Opponent == "team") |>
-  select(Team_or_Opponent, Squad, PrgP)
+  select(Season_End_Year, Squad, PrgP)
 
 big5_possession |>
-  filter(Team_or_Opponent == "team") |>
   select(Season_End_Year, Squad, PrgC_Carries)
 ```
 
@@ -57,11 +60,13 @@ ggplot() + geom_line(data = filtered_big5_shooting, aes(x = Season_End_Year, y =
 
 
 ```{r}
-big5 <- data.frame(big5_shooting$Season_End_Year, big5_shooting$Squad, big5_shooting$npxG_Expected, big5_passing$PrgP, big5_possession$PrgC_Carries) |>
-  mutate(Progressions = big5_passing.PrgP + big5_possession.PrgC_Carries)
+big5 <- data.frame(Season = big5_shooting$Season_End_Year, Club = big5_shooting$Squad, NonPenaltyGoals = filtered_big5_shooting$non_PK_Gls, ProgressivePasses = big5_passing$PrgP, ProgressiveCarries = big5_possession$PrgC_Carries) |>
+  mutate(Progressions = ProgressivePasses + ProgressiveCarries) |>
+  unite("Squad", Season, Club, remove = TRUE) |>
+  mutate(Squad = gsub("_", " ", Squad))
 ```
 
-
+I cleaned this up after finding out I could name my columns! I also united the season and club columns. I also fixed a problem I thought I had already fixed before regarding both team and opponent stats showing up.
 
 ```{r}
 big5_wide <- big5 |>
@@ -84,3 +89,37 @@ Another issue is simply the volume of teams. There are 5 leagues. Up until this 
 
 Small issue I can solve by myself but haven't attempted it yet is finding out how to combine two columns. I assume there is a function for that and I'll need it to combine the Year and Squad columns.
 
+```{r}
+fit <- lm(NonPenaltyGoals ~ Progressions, data = big5)
+summary(fit)
+```
+
+Super-low p-value suggests this data is usable, high r-squared suggests the impact of progressions on non-penalty goals is high. These are good data.
+
+```{r}
+ggplot() + geom_point(data = big5, aes(x = Progressions, y = NonPenaltyGoals)) +
+  geom_smooth(data = big5, aes(x = Progressions, y = NonPenaltyGoals), method = "lm")
+```
+
+Most teams, if not every team—it would be a shame if it was not every team—in the bottom left corner is from the ongoing season, so the data, which is cumulative, are relatively lower. That does not prevent us from seeing the overall trend of the graph. It is well-illustrated that more progressions leads to more goals.
+
+Now that we know that progressions are strongly correlated to goals, more questions can be asked. For example, which form of progressing the ball is more impactful? Carrying or passing?
+
+```{r}
+carryfit <- lm(NonPenaltyGoals ~ ProgressiveCarries, data = big5)
+passfit <- lm(NonPenaltyGoals ~ ProgressivePasses, data = big5)
+summary(carryfit)
+summary(passfit)
+```
+
+As we can see, both correlations are significant. However, we can tell that progressive passes have more impact on scoring than progressive carries do.
+
+```{r}
+ggplot() + geom_point(data = big5, aes(x = ProgressiveCarries, y = NonPenaltyGoals)) +
+  geom_smooth(data = big5, aes(x = ProgressiveCarries, y = NonPenaltyGoals), method = "lm")
+
+ggplot() + geom_point(data = big5, aes(x = ProgressivePasses, y = NonPenaltyGoals)) +
+  geom_smooth(data = big5, aes(x = ProgressivePasses, y = NonPenaltyGoals), method = "lm")
+```
+
+The scatterplots are quite similar and honestly, unless you knew that progressive carries had a larger margin of error than progressive passes, you would not be able to tell by glancing at the graph. However, the margin is slightly bigger.
