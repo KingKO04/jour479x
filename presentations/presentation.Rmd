@@ -1,0 +1,91 @@
+I have chosen to attack the first question I posed: "Would ball progression stats like progressive passes and progressive carries be good indicators of how well a team does at creating chances?". Some notes on the data backgrounding:
+
+- the data already exist and can be scraped from fbref.com, though only certain leagues have all the data required. because of this, I will only be looking at the top 5 European leagues (English Premier League, La Liga, Bundesliga, Serie A, and Ligue 1)
+- I will be using data dating back to the 2017-2018 season
+
+
+First, I need to install the World Football scraper. This allows me to scrape the data I need from Football Reference, a site with data for football/soccer teams and players for several leagues around the world. 
+
+```{r}
+library(tidyverse)
+install.packages("worldfootballR")
+library(worldfootballR)
+```
+
+I only need data from the top 5 leagues in the world, though. So I will only scrape data from those.
+
+
+```{r}
+big5_shooting <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "shooting", team_or_player = "team") |>
+  filter(Team_or_Opponent == "team") |>
+  subset(select = -Team_or_Opponent)
+big5_passing <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "passing", team_or_player = "team") |>
+  filter(Team_or_Opponent == "team") |>
+  subset(select = -Team_or_Opponent)
+big5_possession <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "possession", team_or_player = "team") |>
+  filter(Team_or_Opponent == "team") |>
+  subset(select = -Team_or_Opponent)
+```
+
+More specifically, I need shooting, passing, and possession data. I want to see how progressive passes (passing data) and progressive carries (possession data) correlate to scoring goals (shooting data). Originally, I was going to correlate progressions to non-penalty expected goals, but five seasons worth of non-penalty goals across 5 leagues is a large enough sample size. Goals should be a good representation of the quality of chances teams typically get. And I want to exclude penalties, because the quality of a penalty bears no relationship with how well a team progresses the ball down the field.
+
+```{r}
+filtered_big5_shooting <- big5_shooting |>
+  group_by(Season_End_Year, Squad) |>
+  summarize(non_PK_Gls = Gls_Standard - PK_Standard, Games = Mins_Per_90)
+
+big5_passing |>
+  select(Season_End_Year, Squad, PrgP)
+
+big5_possession |>
+  select(Season_End_Year, Squad, PrgC_Carries)
+```
+
+
+Here is a table with all the teams for each season.
+
+```{r}
+big5 <- data.frame(Season = big5_shooting$Season_End_Year, Club = big5_shooting$Squad, NonPenaltyGoals = filtered_big5_shooting$non_PK_Gls, ProgressivePasses = big5_passing$PrgP, ProgressiveCarries = big5_possession$PrgC_Carries) |>
+  mutate(Progressions = ProgressivePasses + ProgressiveCarries) |>
+  unite("Squad", Season, Club, remove = TRUE) |>
+  mutate(Squad = gsub("_", " ", Squad))
+```
+
+```{r}
+fit <- lm(NonPenaltyGoals ~ Progressions, data = big5)
+summary(fit)
+```
+
+Super-low p-value suggests this data is usable, high r-squared suggests the impact of progressions on non-penalty goals is high. These are good data.
+
+```{r}
+ggplot() + geom_point(data = big5, aes(x = Progressions, y = NonPenaltyGoals)) +
+  geom_smooth(data = big5, aes(x = Progressions, y = NonPenaltyGoals), method = "lm")
+```
+
+Most teams, if not every team—it would be a shame if it was not every team—in the bottom left corner is from the ongoing season, so the data, which is cumulative, are relatively lower. That does not prevent us from seeing the overall trend of the graph. It is well-illustrated that more progressions leads to more goals.
+
+This demonstrates the value of having players that can help progress the ball down the field. Whether it's a player who can break a line of the opponent's defensive structure with his ball-carrying, a deep-lying who can find a teammate with a line-breaking pass 20 yards ahead of him/her, or an advanced player who can find space between the lines to receive a pass and turn with the ball, having players who can help a team progress the ball from one third of the pitch into the next is vital for attacking football. 
+
+Now that we know that progressions are strongly correlated to goals, more questions can be asked. For example, which form of progressing the ball is more impactful? Carrying or passing?
+
+```{r}
+carryfit <- lm(NonPenaltyGoals ~ ProgressiveCarries, data = big5)
+passfit <- lm(NonPenaltyGoals ~ ProgressivePasses, data = big5)
+summary(carryfit)
+summary(passfit)
+```
+
+As we can see, both correlations are significant. However, we can tell that progressive passes have more impact on scoring than progressive carries do.
+
+This further suggests that any type of player who helps their team progress the ball down the field is helping their attack. However, progressive passes tend to be more useful. This could be because most progressive carries happen deeper in the attacking team's own territory. As a team gets closer to the opponent's attacking third, progressive passes tend to be what's required to actually enter the attacking third. Carrying the ball in this instance is a lot more difficult, as there's less space to do so and more defenders around when compared to carrying the ball from the defensive third to the middle third.
+
+```{r}
+ggplot() + geom_point(data = big5, aes(x = ProgressiveCarries, y = NonPenaltyGoals)) +
+  geom_smooth(data = big5, aes(x = ProgressiveCarries, y = NonPenaltyGoals), method = "lm")
+
+ggplot() + geom_point(data = big5, aes(x = ProgressivePasses, y = NonPenaltyGoals)) +
+  geom_smooth(data = big5, aes(x = ProgressivePasses, y = NonPenaltyGoals), method = "lm")
+```
+
+The scatterplots are quite similar. Honestly, unless you knew that progressive carries had a larger margin of error than progressive passes, you would not be able to tell by glancing at the graph. However, the margin is slightly bigger.
