@@ -1,19 +1,17 @@
 I have chosen to attack the first question I posed: "Would ball progression stats like progressive passes and progressive carries be good indicators of how well a team does at creating chances?". Some notes on the data backgrounding:
 
-- the data already exist and can be scraped from fbref.com, though only certain leagues have all the data required. because of this, I will only be looking at the top 5 European leagues (English Premier League, La Liga, Bundesliga, Serie A, and Ligue 1)
-- I will be using data dating back to the 2017-2018 season
+-   the data already exist and can be scraped from fbref.com, though only certain leagues have all the data required. because of this, I will only be looking at the top 5 European leagues (English Premier League, La Liga, Bundesliga, Serie A, and Ligue 1)
+-   I will be using data dating back to the 2017-2018 season
 
-
-First, I need to install the World Football scraper. This allows me to scrape the data I need from Football Reference, a site with data for football/soccer teams and players for several leagues around the world. 
+First, I need to install the World Football scraper. This allows me to scrape the data I need from Football Reference, a site with data for football/soccer teams and players for several leagues around the world.
 
 ```{r}
-library(tidyverse)
+suppressWarnings(suppressMessages(library(tidyverse)))
 install.packages("worldfootballR")
-library(worldfootballR)
+suppressWarnings(library(worldfootballR))
 ```
 
 I only need data from the top 5 leagues in the world, though. So I will only scrape data from those.
-
 
 ```{r}
 big5_shooting <- fb_big5_advanced_season_stats(season_end_year = c(2018:2024), stat_type = "shooting", team_or_player = "team") |>
@@ -41,7 +39,6 @@ big5_possession |>
   select(Season_End_Year, Squad, PrgC_Carries)
 ```
 
-
 Here is a table with all the teams for each season.
 
 ```{r}
@@ -60,12 +57,46 @@ Super-low p-value suggests this data is usable, high r-squared suggests the impa
 
 ```{r}
 ggplot() + geom_point(data = big5, aes(x = Progressions, y = NonPenaltyGoals)) +
-  geom_smooth(data = big5, aes(x = Progressions, y = NonPenaltyGoals), method = "lm")
+  geom_smooth(data = big5, aes(x = Progressions, y = NonPenaltyGoals), method = "lm")  + 
+  labs(x="Progressions", y="Non-Penalty Goals", title="Progressions Lead to Goals", caption="Source: Football Reference | By Kaodinna Onwumechili", color = "Outcome") +
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 7),
+    axis.ticks = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    legend.position="bottom"
+  )
 ```
 
-Most teams, if not every team—it would be a shame if it was not every team—in the bottom left corner is from the ongoing season, so the data, which is cumulative, are relatively lower. That does not prevent us from seeing the overall trend of the graph. It is well-illustrated that more progressions leads to more goals.
+Most teams, if not every team---it would be a shame if it was not every team---in the bottom left corner is from the ongoing season, so the data, which is cumulative, are relatively lower. That does not prevent us from seeing the overall trend of the graph. It is well-illustrated that more progressions leads to more goals.
 
-This demonstrates the value of having players that can help progress the ball down the field. Whether it's a player who can break a line of the opponent's defensive structure with his ball-carrying, a deep-lying who can find a teammate with a line-breaking pass 20 yards ahead of him/her, or an advanced player who can find space between the lines to receive a pass and turn with the ball, having players who can help a team progress the ball from one third of the pitch into the next is vital for attacking football. 
+```{r}
+ggplot() + 
+  geom_point(
+  data = big5, 
+  aes(x = ProgressivePasses, y = ProgressiveCarries, size = NonPenaltyGoals),
+  alpha = .3
+  ) +
+  scale_size(range = c(1, 5), name = "Non-Penalty Goals")  + 
+  labs(x="Progressive Passes", y="Progressive Carries", title="Variety in Progress", caption="Source: Football Reference | By Kaodinna Onwumechili", color = "Outcome") +
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 7),
+    axis.ticks = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    legend.position="bottom"
+  )
+```
+
+Most teams are capable at both progressing the ball via carries and passes. The highest scoring teams are elite at both, whereas teams struggling to score struggle at progressing the ball either way.
+
+This demonstrates the value of having players that can help progress the ball down the field. Whether it's a player who can break a line of the opponent's defensive structure with his ball-carrying, a deep-lying who can find a teammate with a line-breaking pass 20 yards ahead of him/her, or an advanced player who can find space between the lines to receive a pass and turn with the ball, having players who can help a team progress the ball from one third of the pitch into the next is vital for attacking football.
 
 Now that we know that progressions are strongly correlated to goals, more questions can be asked. For example, which form of progressing the ball is more impactful? Carrying or passing?
 
@@ -82,10 +113,32 @@ This further suggests that any type of player who helps their team progress the 
 
 ```{r}
 ggplot() + geom_point(data = big5, aes(x = ProgressiveCarries, y = NonPenaltyGoals)) +
-  geom_smooth(data = big5, aes(x = ProgressiveCarries, y = NonPenaltyGoals), method = "lm")
+  geom_smooth(data = big5, aes(x = ProgressiveCarries, y = NonPenaltyGoals), method = "lm")  + 
+  labs(x="Progressive Carries", y="Non-Penalty Goals", title="Carrying the Attack", caption="Source: Football Reference | By Kaodinna Onwumechili", color = "Outcome") +
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 7),
+    axis.ticks = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    legend.position="bottom"
+  )
 
 ggplot() + geom_point(data = big5, aes(x = ProgressivePasses, y = NonPenaltyGoals)) +
-  geom_smooth(data = big5, aes(x = ProgressivePasses, y = NonPenaltyGoals), method = "lm")
+  geom_smooth(data = big5, aes(x = ProgressivePasses, y = NonPenaltyGoals), method = "lm")  + 
+  labs(x="Progressive Passes", y="Non-Penalty Goals", title="Pass Through the Defense", caption="Source: Football Reference | By Kaodinna Onwumechili", color = "Outcome") +
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 7),
+    axis.ticks = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    legend.position="bottom"
+  )
 ```
 
 The scatterplots are quite similar. Honestly, unless you knew that progressive carries had a larger margin of error than progressive passes, you would not be able to tell by glancing at the graph. However, the margin is slightly bigger.
