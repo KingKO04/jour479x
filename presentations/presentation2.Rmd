@@ -1,0 +1,248 @@
+How many games of data do you need before confidently predicting receiving stats? As an avid fantasy football player, I want to be able to properly react to trends throughout a season. There are four main stats I want to look at: targets, receptions, receiving yards, and receiving touchdowns. These are the stats most commonly relevant to receiving production in fantasy football. Using nflfastR, I can get play-by-play data dating back to 1999. I can create game logs myself using R to organize the data as I see fit.
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+library(nflreadr)
+library(nflplotR)
+library(dplyr)
+```
+
+NOTE: I prefer looking at full numbers rather than them in scientific notation. This ensures that.
+
+```{r}
+options(scipen = 9999)
+```
+
+I want to focus on the past 3 seasons in the NFL.
+
+```{r}
+szn2021 <- load_pbp(2021)
+szn2022 <- load_pbp(2022)
+szn2023 <- load_pbp(2023)
+```
+
+We only need pass plays. Specifically, pass plays with an intended target.
+
+```{r}
+szn2021 <- szn2021 |>
+  filter(season_type == "REG", play_type == "pass", !is.na(receiver))
+szn2022 <- szn2022 |>
+  filter(season_type == "REG", play_type == "pass", !is.na(receiver))
+szn2023 <- szn2023 |>
+  filter(season_type == "REG", play_type == "pass", !is.na(receiver))
+```
+
+The only data I need is receiver_id, receiver, week, complete pass, and receiving yards. I also should add a new column called "clean id". This will allow me to have one column where I can see a player's name but also their ID so I can tell when there are two different players with the same name.
+
+```{r}
+szn2021 <- szn2021 |> 
+  select(
+  'receiver_id', 
+  'receiver', 
+  'week', 
+  'complete_pass', 
+  'receiving_yards',
+  'pass_touchdown'
+  )
+szn2021$clean_id <- paste("2021", szn2021$receiver_id, szn2021$receiver)
+
+szn2022 <- szn2022 |> 
+  select(
+  'receiver_id', 
+  'receiver', 
+  'week', 
+  'complete_pass', 
+  'receiving_yards',
+  'pass_touchdown'
+  )
+szn2022$clean_id <- paste("2022", szn2022$receiver_id, szn2022$receiver)
+
+szn2023 <- szn2023 |> 
+  select(
+  'receiver_id', 
+  'receiver', 
+  'week', 
+  'complete_pass', 
+  'receiving_yards',
+  'pass_touchdown'
+  )
+
+szn2023$clean_id <- paste("2023", szn2023$receiver_id, szn2023$receiver)
+
+```
+
+I also need to change all the NAs in the receiving yard column to 0s. This will make calculations easier in the future.
+
+```{r}
+szn2021 <- szn2021 |>
+  mutate(
+    receiving_yards = ifelse(
+      is.na(receiving_yards),
+      0,
+      receiving_yards
+    )
+  )
+
+szn2022 <- szn2022 |>
+  mutate(
+    receiving_yards = ifelse(
+      is.na(receiving_yards),
+      0,
+      receiving_yards
+    )
+  )
+
+szn2023 <- szn2023 |>
+  mutate(
+    receiving_yards = ifelse(
+      is.na(receiving_yards),
+      0,
+      receiving_yards
+    )
+  )
+```
+
+Let's divide this up by player and by week.
+
+```{r}
+players2021 <- szn2021 |>
+  group_by(clean_id, week) |>
+  summarize(
+    targets = n(),
+    receptions = sum(complete_pass),
+    yards = sum(receiving_yards),
+    touchdowns = sum(pass_touchdown)
+  )
+
+players2022 <- szn2022 |>
+  group_by(clean_id, week) |>
+  summarize(
+    targets = n(),
+    receptions = sum(complete_pass),
+    yards = sum(receiving_yards),
+    touchdowns = sum(pass_touchdown)
+  )
+
+players2023 <- szn2023 |>
+  group_by(clean_id, week) |>
+  summarize(
+    targets = n(),
+    receptions = sum(complete_pass),
+    yards = sum(receiving_yards),
+    touchdowns = sum(pass_touchdown)
+  )
+```
+
+Let's create a dataframe for each player. It will make following steps easier.
+
+```{r}
+gamelogs2021 <- players2021 |>
+  split(f = players2021$clean_id)
+  
+gamelogs2022 <- players2022 |>
+  split(f = players2022$clean_id)
+
+gamelogs2023 <-players2023 |>
+  split(f = players2023$clean_id)
+```
+
+This makes a list of dataframes of the game logs, but I want each game log to be its own dataframe. There is going to be a lot of output in the console, so we will need to increase the max print space.
+
+Now, there are some caveats with this data. The biggest problem is that there is no way to tell whether a player did not play in a certain week or the player played but simply did not get targeted. Because of this, if a player did not get targeted in a certain week, we will make the assumption that the player did not play. It's an unfortunate drawback, but we'll chug along.
+
+Time to get our "stints", which are simply just rolling averages. To do this, we'll need the zoo package.
+
+```{r}
+library(zoo)
+```
+
+Now we can get our stints.
+
+```{r}
+for(player in gamelogs2021) {
+  player <- player |>
+    mutate(
+      targets_stint1 = rollmean(targets, k = 1),
+      receptions_stint1 = rollmean(receptions, k = 1),
+      yards_stint1 = rollmean(yards, k = 1),
+      touchdowns_stint1 = rollmean(touchdowns, k = 1),
+      
+      targets_stint2 = rollmean(targets, k = 2),
+      receptions_stint2 = rollmean(receptions, k = 2),
+      yards_stint2 = rollmean(yards, k = 2),
+      touchdowns_stint2 = rollmean(touchdowns, k = 2),
+      
+      targets_stint3 = rollmean(targets, k = 3),
+      receptions_stint3 = rollmean(receptions, k = 3),
+      yards_stint3 = rollmean(yards, k = 3),
+      touchdowns_stint3 = rollmean(touchdowns, k = 3),
+      
+      targets_stint4 = rollmean(targets, k = 4),
+      receptions_stint4 = rollmean(receptions, k = 4),
+      yards_stint4 = rollmean(yards, k = 4),
+      touchdowns_stint4 = rollmean(touchdowns, k = 4),
+      
+      targets_stint5 = rollmean(targets, k = 5),
+      receptions_stint5 = rollmean(receptions, k = 5),
+      yards_stint5 = rollmean(yards, k = 5),
+      touchdowns_stint5 = rollmean(touchdowns, k = 5),
+      
+      targets_stint6 = rollmean(targets, k = 6),
+      receptions_stint6 = rollmean(receptions, k = 6),
+      yards_stint6 = rollmean(yards, k = 6),
+      touchdowns_stint6 = rollmean(touchdowns, k = 6),
+      
+      targets_stint7 = rollmean(targets, k = 7),
+      receptions_stint7 = rollmean(receptions, k = 7),
+      yards_stint7 = rollmean(yards, k = 7),
+      touchdowns_stint7 = rollmean(touchdowns, k = 7),
+      
+      targets_stint8 = rollmean(targets, k = 8),
+      receptions_stint8 = rollmean(receptions, k = 8),
+      yards_stint8 = rollmean(yards, k = 8),
+      touchdowns_stint8 = rollmean(touchdowns, k = 8),
+      
+      targets_stint9 = rollmean(targets, k = 9),
+      receptions_stint9 = rollmean(receptions, k = 9),
+      yards_stint9 = rollmean(yards, k = 9),
+      touchdowns_stint9 = rollmean(touchdowns, k = 9),
+      
+      targets_stint10 = rollmean(targets, k = 10),
+      receptions_stint10 = rollmean(receptions, k = 10),
+      yards_stint10 = rollmean(yards, k = 10),
+      touchdowns_stint10 = rollmean(touchdowns, k = 10),
+      
+      targets_stint11 = rollmean(targets, k = 11),
+      receptions_stint11 = rollmean(receptions, k = 11),
+      yards_stint11 = rollmean(yards, k = 11),
+      touchdowns_stint11 = rollmean(touchdowns, k = 11),
+      
+      targets_stint12 = rollmean(targets, k = 12),
+      receptions_stint12 = rollmean(receptions, k = 12),
+      yards_stint12 = rollmean(yards, k = 12),
+      touchdowns_stint12 = rollmean(touchdowns, k = 12),
+      
+      targets_stint13 = rollmean(targets, k = 13),
+      receptions_stint13 = rollmean(receptions, k = 13),
+      yards_stint13 = rollmean(yards, k = 13),
+      touchdowns_stint13 = rollmean(touchdowns, k = 13),
+      
+      targets_stint14 = rollmean(targets, k = 14),
+      receptions_stint14 = rollmean(receptions, k = 14),
+      yards_stint14 = rollmean(yards, k = 14),
+      touchdowns_stint14 = rollmean(touchdowns, k = 14),
+      
+      targets_stint15 = rollmean(targets, k = 15),
+      receptions_stint15 = rollmean(receptions, k = 15),
+      yards_stint15 = rollmean(yards, k = 15),
+      touchdowns_stint15 = rollmean(touchdowns, k = 15),
+      
+      targets_stint16 = rollmean(targets, k = 16),
+      receptions_stint16 = rollmean(receptions, k = 16),
+      yards_stint16 = rollmean(yards, k = 16),
+      touchdowns_stint16 = rollmean(touchdowns, k = 16)
+    )
+}
+```
+
