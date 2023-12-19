@@ -1389,7 +1389,7 @@ ggplot() + geom_line(data=targets_reliability, aes(x=games, y=r_squared), color=
        y="R Squared", 
        title="6 Games is Enough", 
        caption="Source: nflfastR | By Kaodinna Onwumechili") +
-  theme_minimal()
+  theme_dark()
 ```
 
 
@@ -1470,7 +1470,7 @@ ggplot() + geom_line(data=yards_reliability, aes(x=games, y=r_squared), color="y
        y="R Squared", 
        title="Turn the 6 Upside Down, It's a 9 Now", 
        caption="Source: nflfastR | By Kaodinna Onwumechili") +
-  theme_minimal()
+  theme_dark()
 ```
 
 Another unsurprising result: it takes more games to predict yards than receptions and targets. Yards are less of a process-oriented data point than receptions or targets. That's also why it is less reliable, as shown by its r-squared.
@@ -1517,3 +1517,66 @@ ggplot() + geom_line(data=touchdowns_reliability, aes(x=games, y=r_squared), col
 As you can see, it is very hard to predict touchdowns, and it takes a large data set (relative to length of a football season) to see even slight correlation.
 
 
+We've identified the best in-season sample sizes to use for each statistic. Let's take a deeper look at the correlation.
+
+```{r}
+ggplot() +
+  geom_point(data=sixth_stint, aes(x=targets_stint6, y=next_targets), color="cyan") +
+  geom_smooth(data=sixth_stint, aes(x=targets_stint6, y=next_targets), method="lm") +
+  theme_dark() +
+  labs(x="Targets per Game Over Six Games",
+       y="Targets in Seventh Game",
+       title="Targets are Somewhat Predictable",
+       caption="Source: nflfastR | By Kaodinna Onwumechili")
+```
+
+There is a strong correlation between the two. However, it is not as strong as we would like it to be. We can see similar in receptions.
+
+```{r}
+ggplot() +
+  geom_point(data=sixth_stint, aes(x=receptions_stint6, y=next_receptions), color="magenta") +
+  geom_smooth(data=sixth_stint, aes(x=receptions_stint6, y=next_receptions), method="lm") +
+  theme_minimal() +
+  labs(x="Receptions per Game Over Six Games",
+       y="Receptions in Seventh Game",
+       title="Receptions are Somewhat Less Predictable",
+       caption="Source: nflfastR | By Kaodinna Onwumechili")
+```
+
+As we noted earlier, yards takes more games to reach its full capacity in terms of predictability. However, as we'll see in the following scatter plot, 8-game rolling averages of yards still have a strong correlation with the subsequent game's yard production.
+
+```{r}
+ggplot() +
+  geom_point(data=eighth_stint, aes(x=yards_stint8, y=next_yards), color="yellow") +
+  geom_smooth(data=eighth_stint, aes(x=yards_stint8, y=next_yards), method="lm") +
+  theme_dark() +
+  labs(x="Yards per Game Over Eight Games",
+       y="Yards in Ninth Game",
+       title="Yards are Even Less Predictable",
+       caption="Source: nflfastR | By Kaodinna Onwumechili")
+```
+
+Lastly, we'll look at touchdowns. It take 15 games to be predictive, but even then it is a bit weak.
+
+```{r}
+ggplot() +
+  geom_point(data=fifteenth_stint,
+             aes(x=touchdowns_stint15, y=next_touchdowns),
+             color="black") +
+  geom_smooth(data=fifteenth_stint, aes(x=touchdowns_stint15, y=next_touchdowns), method="lm") +
+  theme_minimal() +
+  labs(x="Touchdowns per Game Over Fifteen Games",
+       y="Touchdowns in Sixteenth Game",
+       title="Touchdowns are a Tossup",
+       caption="Source: nflfastR | By Kaodinna Onwumechili")
+```
+
+Not only a weak correlation but comparatively a significantly small sample size. Not many players play fifteen games!
+
+Some stats are easier to predict than other. Intuitively, we understand that. You especially have an understanding of this if you are into sports. The deeper you are into sports, the stronger of a grasp you have on this. This merely gives us a glance into exactly how predictable specific stats are, which is useful if you are into data, sports betting, or fantasy sports.
+
+As noted earlier, due to the data set, there are some drawbacks with this model. Namely, the exclusion of "blank" weeks, or weeks where players played but were uninvolved.
+
+Another way to approach this in the future would be to only include the top two receivers on each team, or at least to segment the data set. Perhaps it is easier to predict production among different tiers of players.
+
+This analysis does give us a lot of information, though. We now have a decent gauge of when to start trusting trends in a player's performance. This is useful beyond just fantasy football; it's useful in evaluating players' real ability. It is an overall useful bit of information for football fans.
